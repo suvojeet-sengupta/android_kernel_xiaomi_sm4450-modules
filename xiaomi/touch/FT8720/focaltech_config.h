@@ -55,6 +55,7 @@
 #define _FT7250             0x7250081A
 #define _FT7120             0x7120081B
 #define _FT8720             0x8720081C
+#define _FT8725             0x87250829
 #define _FT8726             0x8726081C
 #define _FT8720H            0x8720E81C
 #define _FT8720M            0x8720F81C

@@ -88,6 +88,7 @@ struct upgrade_setting_nf upgrade_setting_list[] = {
     {0xF0, 0xC6, 0, (84 * 1024),  (128 * 1024), 0xA5, 0x01, 8,  0, 2, 0, 1, 0},
     {0x56, 0x62, 0, (128 * 1024), (128 * 1024), 0xA5, 0x01, 8,  0, 4, 0, 0, 5},
     {0x82, 0x05, 0, (120 * 1024), (128 * 1024), 0xA5, 0x01, 8,  0, 2, 0, 0, 0},
+    {0x87, 0x25, 0, (88 * 1024),  (128 * 1024), 0xA5, 0x01, 8,  0, 2, 0, 1, 0},
 };
 
 struct fts_upgrade *fwupgrade;
@@ -947,8 +948,16 @@ static int fts_fw_resume(bool need_reset, enum FW_TYPE fw_type)
     }
 
     if (FTS_FW_REQUEST_SUPPORT) {
-        snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin", \
-                 FTS_FW_NAME_PREX_WITH_REQUEST, upg->module_info->vendor_name);
+	/* Check if the IC is the 8725 variant */
+        if (upg->ts_data->ic_info.ids.rom_idh == 0x87 &&
+            upg->ts_data->ic_info.ids.rom_idl == 0x25) {
+            snprintf(fwname, FILE_NAME_LENGTH, "focaltech_8725_fw.bin");
+            FTS_INFO("Targeting 8725 specific firmware: %s", fwname);
+        } else {
+            /* Fallback to the original vendor-based naming convention */
+            snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin",
+                     FTS_FW_NAME_PREX_WITH_REQUEST, upg->module_info->vendor_name);
+        }
         ret = request_firmware(&fw, fwname, upg->ts_data->dev);
         if (ret == 0) {
             FTS_INFO("firmware(%s) request successfully", fwname);
@@ -1108,9 +1117,14 @@ static int fts_get_fw_file_via_request_firmware(struct fts_upgrade *upg)
     u8 *tmpbuf = NULL;
     char fwname[FILE_NAME_LENGTH] = { 0 };
 
-    snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin", \
-             FTS_FW_NAME_PREX_WITH_REQUEST, \
-             upg->module_info->vendor_name);
+    if (upg->ts_data->ic_info.ids.rom_idh == 0x87 &&
+        upg->ts_data->ic_info.ids.rom_idl == 0x25) {
+        snprintf(fwname, FILE_NAME_LENGTH, "focaltech_8725_fw.bin");
+    } else {
+        snprintf(fwname, FILE_NAME_LENGTH, "%s%s.bin",
+                 FTS_FW_NAME_PREX_WITH_REQUEST,
+                 upg->module_info->vendor_name);
+    }
 
     ret = request_firmware(&fw, fwname, upg->ts_data->dev);
     if (0 == ret) {
