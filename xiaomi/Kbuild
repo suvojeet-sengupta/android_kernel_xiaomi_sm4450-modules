@@ -1,2 +1,3 @@
 # Xiaomi out-of-tree kernel modules
 obj-y += misc/
+obj-y += touch/

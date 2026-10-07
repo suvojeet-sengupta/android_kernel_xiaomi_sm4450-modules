@@ -1,0 +1,30 @@
+ccflags-y += -I$(srctree)/$(src)/../include
+ccflags-y += -DCONFIG_XIAOMI_PANEL_NOTIFIER_MODULE=1
+ccflags-y += -DCONFIG_XIAOMI_TOUCH_NOTIFIER_MODULE=1
+ccflags-y += -DCONFIG_XIAOMI_USB_TOUCH_NOTIFIER_MODULE=1
+ccflags-y += -DCONFIG_XIAOMI_HEADSET_TOUCH_NOTIFIER_MODULE=1
+ccflags-y += -DCONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE_MODULE=1
+
+obj-m += xiaomi_touch.o
+xiaomi_touch-y := xiaomi_touch/xiaomi_touch.o
+
+obj-m += nvt_36672c.o
+nvt_36672c-y := \
+	NT36672C_SPI/nt36xxx.o \
+	NT36672C_SPI/nt36xxx_fw_update.o \
+	NT36672C_SPI/nt36xxx_ext_proc.o \
+	NT36672C_SPI/nt36xxx_mp_ctrlram.o
+
+obj-m += fts_8720.o
+fts_8720-y := \
+	FT8720/focaltech_core.o \
+	FT8720/focaltech_ex_fun.o \
+	FT8720/focaltech_ex_mode.o \
+	FT8720/focaltech_gesture.o \
+	FT8720/focaltech_esdcheck.o \
+	FT8720/focaltech_point_report_check.o \
+	FT8720/focaltech_spi.o \
+	FT8720/focaltech_flash.o \
+	FT8720/focaltech_test/focaltech_test.o \
+	FT8720/focaltech_test/focaltech_test_ini.o \
+	FT8720/focaltech_test/supported_ic/focaltech_test_ft8720.o
