@@ -36,6 +36,11 @@
 extern int aw87xxx_set_profile(int dev_index, char *profile);
 extern int aw87xxx_add_codec_controls(void *codec);
 #endif
+#if IS_ENABLED(CONFIG_SND_SOC_FS15XX)
+extern void fsm_speaker_onn(void);
+extern void fsm_speaker_off(void);
+extern void fsm_add_codec_controls(struct snd_soc_component *codec);
+#endif
 
 #define WCD9370_VARIANT 0
 #define WCD9375_VARIANT 5
@@ -1068,6 +1073,9 @@ static int wcd937x_codec_enable_aux_pa(struct snd_soc_dapm_widget *w,
 #if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
 		aw87xxx_set_profile(0, "Music");
 #endif
+#if IS_ENABLED(CONFIG_SND_SOC_FS15XX)
+		fsm_speaker_onn();
+#endif
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		wcd_disable_irq(&wcd937x->irq_info, WCD937X_IRQ_AUX_PDM_WD_INT);
@@ -1077,6 +1085,9 @@ static int wcd937x_codec_enable_aux_pa(struct snd_soc_dapm_widget *w,
 						(WCD_RX3 << 0x10 | 0x1));
 #if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
 		aw87xxx_set_profile(0, "Off");
+#endif
+#if IS_ENABLED(CONFIG_SND_SOC_FS15XX)
+		fsm_speaker_off();
 #endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
@@ -3091,6 +3102,9 @@ static int wcd937x_soc_codec_probe(struct snd_soc_component *component)
 			__func__, ret);
 		return ret;
 	}
+#endif
+#if IS_ENABLED(CONFIG_SND_SOC_FS15XX)
+	fsm_add_codec_controls(component);
 #endif
 	return ret;
 
