@@ -32,6 +32,11 @@
 #include "internal.h"
 #include "asoc/bolero-slave-internal.h"
 
+#if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
+extern int aw87xxx_set_profile(int dev_index, char *profile);
+extern int aw87xxx_add_codec_controls(void *codec);
+#endif
+
 #define WCD9370_VARIANT 0
 #define WCD9375_VARIANT 5
 #define WCD937X_VARIANT_ENTRY_SIZE 32
@@ -1060,6 +1065,9 @@ static int wcd937x_codec_enable_aux_pa(struct snd_soc_dapm_widget *w,
 						SLV_BOLERO_EVT_RX_MUTE,
 						(WCD_RX3 << 0x10));
 		wcd_enable_irq(&wcd937x->irq_info, WCD937X_IRQ_AUX_PDM_WD_INT);
+#if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
+		aw87xxx_set_profile(0, "Music");
+#endif
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		wcd_disable_irq(&wcd937x->irq_info, WCD937X_IRQ_AUX_PDM_WD_INT);
@@ -1067,6 +1075,9 @@ static int wcd937x_codec_enable_aux_pa(struct snd_soc_dapm_widget *w,
 			wcd937x->update_wcd_event(wcd937x->handle,
 						SLV_BOLERO_EVT_RX_MUTE,
 						(WCD_RX3 << 0x10 | 0x1));
+#if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
+		aw87xxx_set_profile(0, "Off");
+#endif
 		break;
 	case SND_SOC_DAPM_POST_PMD:
 		/* Add delay as per hw requirement */
@@ -3072,6 +3083,15 @@ static int wcd937x_soc_codec_probe(struct snd_soc_component *component)
 			return ret;
 		}
 	}
+
+#if IS_ENABLED(CONFIG_SND_SOC_AW87XXX)
+	ret = aw87xxx_add_codec_controls(component);
+	if (ret < 0) {
+		dev_err(component->dev, "%s: aw87xxx add controls failed %d\n",
+			__func__, ret);
+		return ret;
+	}
+#endif
 	return ret;
 
 err_hwdep:
