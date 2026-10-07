@@ -1,0 +1,33 @@
+# We can build either as part of a standalone Kernel build or as
+# an external module.  Determine which mechanism is being used
+ifeq ($(MODNAME),)
+	KERNEL_BUILD := 1
+else
+	KERNEL_BUILD := 0
+endif
+
+ifeq ($(KERNEL_BUILD), 0)
+	ifeq ($(CONFIG_ARCH_WAIPIO), y)
+		include $(AUDIO_ROOT)/config/waipioauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/waipioautoconf.h
+	endif
+	ifeq ($(CONFIG_ARCH_PARROT), y)
+		include $(AUDIO_ROOT)/config/waipioauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/waipioautoconf.h
+	endif
+endif
+
+############ FOURSEMI ############
+
+# for FourSemi Codec
+ifdef CONFIG_SND_SOC_FS15XX
+	FS15XX_OBJS += fs1599.o
+	FS15XX_OBJS += fsm_core.o
+	FS15XX_OBJS += fsm_i2c.o
+endif
+
+EXTRA_CFLAGS += $(INCS)
+
+# Module information used by KBuild framework
+obj-$(CONFIG_SND_SOC_FS15XX) += fs15xx_dlkm.o
+fs15xx_dlkm-y := $(FS15XX_OBJS)

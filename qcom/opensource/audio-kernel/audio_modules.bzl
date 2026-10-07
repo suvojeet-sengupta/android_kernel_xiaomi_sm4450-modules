@@ -478,3 +478,14 @@ audio_modules.register(
         "aw87xxx_acf_bin.c",
     ]
 )
+# >>>> FS15XX MODULES <<<<
+audio_modules.register(
+    name = "fs15xx_dlkm",
+    path = ASOC_CODECS_PATH + "/fs15xx",
+    config_option = "CONFIG_SND_SOC_FS15XX",
+    srcs = [
+        "fs1599.c",
+        "fsm_core.c",
+        "fsm_i2c.c",
+    ]
+)
