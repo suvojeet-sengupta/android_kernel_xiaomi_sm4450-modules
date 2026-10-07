@@ -1,3 +1,3 @@
 soong_namespace {
-    imports: ["kernel/qcom/sm4450"]
+    imports: ["kernel/xiaomi/sm4450"]
 }
