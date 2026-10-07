@@ -1,0 +1,8 @@
+ccflags-y += -I$(srctree)/$(src)/../include
+ccflags-y += -DCONFIG_XIAOMI_PANEL_NOTIFIER_MODULE=1
+
+obj-m += gf_spi.o
+gf_spi-y := goodix/gf_spi.o
+
+obj-m += fpc1020_platform_tee.o
+fpc1020_platform_tee-y := fpc/fpc1020_platform_tee.o

@@ -1,3 +1,4 @@
 # Xiaomi out-of-tree kernel modules
+obj-y += fingerprint/
 obj-y += misc/
 obj-y += touch/
