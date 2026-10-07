@@ -73,6 +73,7 @@ LINUX_INC +=	-I$(KERNEL_SRC)/include/linux \
 
 LINUX_INC +=	-I$(DISPLAY_ROOT) \
 	-I$(DISPLAY_ROOT)/include \
+	-I$(DISPLAY_ROOT)/../../../xiaomi/include \
 	-I$(KERNEL_ROOT)/drivers/clk/qcom \
 	-I$(KERNEL_SRC)/drivers/clk/qcom \
 	-I$(DISPLAY_ROOT)/include/linux \

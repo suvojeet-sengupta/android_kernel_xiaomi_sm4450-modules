@@ -13,6 +13,22 @@
 #include <video/mipi_display.h>
 
 #include "dsi_panel.h"
+#include <linux/ocp2131_bias.h>
+#include <misc/xiaomi_panel_notifier.h>
+
+extern void ktd3136_reg_init(bool which_display);
+extern int ktd3136_bl_set_brightness(u32 bl_lvl);
+
+u8 is_panel;
+bool touch_gesture_enable;
+bool touch_priximity_enable;
+static struct xiaomi_panel_notify_data g_notify_data;
+
+static void xiaomi_panel_notify(unsigned long event, int blank)
+{
+	g_notify_data.blank = blank;
+	xiaomi_panel_notifier_call_chain(event, &g_notify_data);
+}
 #include "dsi_ctrl_hw.h"
 #include "dsi_parser.h"
 #include "sde_dbg.h"
@@ -369,6 +385,16 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 		goto error_disable_vregs;
 	}
 
+	if (panel->bl_config.type == DSI_BACKLIGHT_I2C) {
+		if (is_panel != 0x0a &&
+		    gpio_is_valid(panel->reset_config.reset_gpio)) {
+			gpio_set_value(panel->reset_config.reset_gpio, 0);
+			usleep_range(4000, 4100);
+		}
+		ocp2131_enable();
+		ktd3136_reg_init(is_panel == 0x0a);
+	}
+
 	rc = dsi_panel_reset(panel);
 	if (rc) {
 		DSI_ERR("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
@@ -652,6 +678,9 @@ int dsi_panel_set_backlight(struct dsi_panel *panel, u32 bl_lvl)
 	case DSI_BACKLIGHT_PWM:
 		rc = dsi_panel_update_pwm_backlight(panel, bl_lvl);
 		break;
+	case DSI_BACKLIGHT_I2C:
+		rc = ktd3136_bl_set_brightness(bl_lvl);
+		break;
 	default:
 		DSI_ERR("Backlight type(%d) not supported\n", bl->type);
 		rc = -ENOTSUPP;
@@ -677,6 +706,7 @@ static u32 dsi_panel_get_brightness(struct dsi_backlight_config *bl)
 	case DSI_BACKLIGHT_DCS:
 	case DSI_BACKLIGHT_EXTERNAL:
 	case DSI_BACKLIGHT_PWM:
+	case DSI_BACKLIGHT_I2C:
 	default:
 		/*
 		 * Ideally, we should read the backlight level from the
@@ -739,6 +769,7 @@ static int dsi_panel_bl_register(struct dsi_panel *panel)
 	case DSI_BACKLIGHT_DCS:
 		break;
 	case DSI_BACKLIGHT_EXTERNAL:
+	case DSI_BACKLIGHT_I2C:
 		break;
 	case DSI_BACKLIGHT_PWM:
 		rc = dsi_panel_pwm_register(panel);
@@ -767,6 +798,7 @@ static int dsi_panel_bl_unregister(struct dsi_panel *panel)
 	case DSI_BACKLIGHT_DCS:
 		break;
 	case DSI_BACKLIGHT_EXTERNAL:
+	case DSI_BACKLIGHT_I2C:
 		break;
 	case DSI_BACKLIGHT_PWM:
 		break;
@@ -2520,6 +2552,8 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 		panel->bl_config.type = DSI_BACKLIGHT_DCS;
 	} else if (!strcmp(bl_type, "bl_ctrl_external")) {
 		panel->bl_config.type = DSI_BACKLIGHT_EXTERNAL;
+	} else if (!strcmp(bl_type, "bl_ctrl_i2c")) {
+		panel->bl_config.type = DSI_BACKLIGHT_I2C;
 	} else {
 		DSI_DEBUG("[%s] bl-pmic-control-type unknown-%s\n",
 			 panel->name, bl_type);
@@ -4495,6 +4529,8 @@ int dsi_panel_prepare(struct dsi_panel *panel)
 		return -EINVAL;
 	}
 
+	xiaomi_panel_notify(XIAOMI_PANEL_EARLY_EVENT_BLANK, XIAOMI_PANEL_BLANK_UNBLANK);
+
 	mutex_lock(&panel->panel_lock);
 
 	if (panel->lp11_init) {
@@ -4807,6 +4843,8 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		return -EINVAL;
 	}
 
+	xiaomi_panel_notify(XIAOMI_PANEL_NORMAL_EVENT_BLANK, XIAOMI_PANEL_BLANK_UNBLANK);
+
 	mutex_lock(&panel->panel_lock);
 
 	rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_ON);
@@ -4835,6 +4873,7 @@ int dsi_panel_enable(struct dsi_panel *panel)
 
 error:
 	mutex_unlock(&panel->panel_lock);
+	xiaomi_panel_notify(XIAOMI_PANEL_EVENT_BLANK, XIAOMI_PANEL_BLANK_UNBLANK);
 	return rc;
 }
 
@@ -4894,6 +4933,8 @@ int dsi_panel_disable(struct dsi_panel *panel)
 		DSI_ERR("invalid params\n");
 		return -EINVAL;
 	}
+
+	xiaomi_panel_notify(XIAOMI_PANEL_EARLY_EVENT_BLANK, XIAOMI_PANEL_BLANK_POWERDOWN);
 
 	mutex_lock(&panel->panel_lock);
 
@@ -4968,7 +5009,12 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
 		       panel->name, rc);
 		goto error;
 	}
+
+	if (panel->bl_config.type == DSI_BACKLIGHT_I2C &&
+	    !(touch_gesture_enable || touch_priximity_enable))
+		ocp2131_disable();
 error:
 	mutex_unlock(&panel->panel_lock);
+	xiaomi_panel_notify(XIAOMI_PANEL_EVENT_BLANK, XIAOMI_PANEL_BLANK_POWERDOWN);
 	return rc;
 }

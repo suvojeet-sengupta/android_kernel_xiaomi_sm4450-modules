@@ -23,6 +23,64 @@
 #include "dsi_pwr.h"
 #include "sde_dbg.h"
 #include "dsi_parser.h"
+#include <misc/xiaomi_touch_notifier.h>
+
+extern void set_panel_name_gki(char *panel_name);
+
+static bool xiaomi_touch_nb_registered;
+
+static int xiaomi_touch_notifier_callback(struct notifier_block *nb,
+		unsigned long event, void *data)
+{
+	struct xiaomi_touch_notify_data *evdata = data;
+
+	if (!evdata)
+		return 0;
+
+	switch (event) {
+	case XIAOMI_TOUCH_SENSOR_EVENT_PS_SWITCH:
+		if (evdata->ps_enable == XIAOMI_TOUCH_SENSOR_PS_ENABLE)
+			touch_priximity_enable = true;
+		else if (evdata->ps_enable == XIAOMI_TOUCH_SENSOR_PS_DISABLE)
+			touch_priximity_enable = false;
+		break;
+	case XIAOMI_TOUCH_GESTURE_EVENT_SWITCH:
+		if (evdata->gesture_enable == XIAOMI_TOUCH_GESTURE_ENABLE)
+			touch_gesture_enable = true;
+		else if (evdata->gesture_enable == XIAOMI_TOUCH_GESTURE_DISABLE)
+			touch_gesture_enable = false;
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block xiaomi_touch_nb = {
+	.notifier_call = xiaomi_touch_notifier_callback,
+};
+
+static void xiaomi_display_probe(struct dsi_display *display)
+{
+	const char *name;
+
+	if (!display->panel_node || display->display_type == NULL ||
+	    strcmp(display->display_type, "primary"))
+		return;
+
+	name = display->panel_node->name;
+	set_panel_name_gki((char *)name);
+
+	if (strstr(name, "m19_36_02_0a"))
+		is_panel = 0x0a;
+	else if (strstr(name, "m19_42_03_0b"))
+		is_panel = 0x0b;
+	else if (strstr(name, "m19_42_03_0c"))
+		is_panel = 0x0c;
+
+	if (!xiaomi_touch_nb_registered &&
+	    !xiaomi_touch_notifier_register_client(&xiaomi_touch_nb))
+		xiaomi_touch_nb_registered = true;
+}
 
 #define to_dsi_display(x) container_of(x, struct dsi_display, host)
 #define INT_BASE_10 10
@@ -6079,6 +6137,8 @@ int dsi_display_dev_probe(struct platform_device *pdev)
 			goto end;
 	}
 
+	xiaomi_display_probe(display);
+
 	return 0;
 end:
 	if (display)
@@ -6103,6 +6163,12 @@ int dsi_display_dev_remove(struct platform_device *pdev)
 		DSI_ERR("invalid param, display %pK, display panel node %pK\n",
 				display, (display) ? display->panel_node : 0);
 		return -EINVAL;
+	}
+
+	if (xiaomi_touch_nb_registered && display->display_type &&
+	    !strcmp(display->display_type, "primary")) {
+		xiaomi_touch_notifier_unregister_client(&xiaomi_touch_nb);
+		xiaomi_touch_nb_registered = false;
 	}
 
 	/* decrement ref count */
