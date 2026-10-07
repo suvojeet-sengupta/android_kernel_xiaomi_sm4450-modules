@@ -1,0 +1,36 @@
+# We can build either as part of a standalone Kernel build or as
+# an external module.  Determine which mechanism is being used
+ifeq ($(MODNAME),)
+	KERNEL_BUILD := 1
+else
+	KERNEL_BUILD := 0
+endif
+
+ifeq ($(KERNEL_BUILD), 0)
+	ifeq ($(CONFIG_ARCH_WAIPIO), y)
+		include $(AUDIO_ROOT)/config/waipioauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/waipioautoconf.h
+	endif
+	ifeq ($(CONFIG_ARCH_PARROT), y)
+		include $(AUDIO_ROOT)/config/waipioauto.conf
+		INCS    +=  -include $(AUDIO_ROOT)/config/waipioautoconf.h
+	endif
+endif
+
+############ AWINIC ############
+
+# for AWINIC Codec
+ifdef CONFIG_SND_SOC_AW87XXX
+	AW87XXX_OBJS += aw87xxx.o
+	AW87XXX_OBJS += aw87xxx_device.o
+	AW87XXX_OBJS += aw87xxx_monitor.o
+	AW87XXX_OBJS += aw87xxx_bin_parse.o
+	AW87XXX_OBJS += aw87xxx_dsp.o
+	AW87XXX_OBJS += aw87xxx_acf_bin.o
+endif
+
+EXTRA_CFLAGS += $(INCS)
+
+# Module information used by KBuild framework
+obj-$(CONFIG_SND_SOC_AW87XXX) += aw87xxx_dlkm.o
+aw87xxx_dlkm-y := $(AW87XXX_OBJS)
