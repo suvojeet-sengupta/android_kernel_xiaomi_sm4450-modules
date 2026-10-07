@@ -1,0 +1,9 @@
+ccflags-y += -I$(srctree)/$(src)/../include
+
+obj-m += xiaomi_panel_notifier.o
+obj-m += xiaomi_touch_notifier.o
+obj-m += xiaomi_usb_touch_notifier.o
+obj-m += xiaomi_headset_touch_notifier.o
+obj-m += hardware_info.o
+obj-m += ktd3136_bl.o
+obj-m += ocp2131_bias.o

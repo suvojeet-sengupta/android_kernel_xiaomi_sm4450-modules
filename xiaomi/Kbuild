@@ -1,0 +1,2 @@
+# Xiaomi out-of-tree kernel modules
+obj-y += misc/
