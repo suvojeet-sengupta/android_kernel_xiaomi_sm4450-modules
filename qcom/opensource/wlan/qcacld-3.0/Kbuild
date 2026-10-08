@@ -3184,7 +3184,10 @@ cppflags-$(CONFIG_NL80211_TESTMODE) += -DWLAN_NL80211_TESTMODE
 
 # Flag to enable bus auto suspend
 ifeq ($(CONFIG_BUS_AUTO_SUSPEND), y)
+# SNOC has no runtime PM bus ops
+ifneq ($(CONFIG_HIF_SNOC), y)
 cppflags-y += -DFEATURE_RUNTIME_PM
+endif
 endif
 
 ifeq (y,$(findstring y, $(CONFIG_ICNSS) $(CONFIG_ICNSS_MODULE)))
