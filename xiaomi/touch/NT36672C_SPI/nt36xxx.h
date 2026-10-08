@@ -144,6 +144,7 @@ struct nvt_ts_data {
 	struct spi_device *client;
 	struct input_dev *input_dev;
 	struct delayed_work nvt_fwu_work;
+	bool fw_loaded;
 	uint16_t addr;
 	int8_t phys[32];
 #if IS_ENABLED(CONFIG_XIAOMI_USB_TOUCH_NOTIFIER)

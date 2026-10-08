@@ -1043,7 +1043,14 @@ return:
 void Boot_Update_Firmware(struct work_struct *work)
 {
 	mutex_lock(&ts->lock);
-	nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME);
+	/* Flashless TDDI: the panel resume already loaded the firmware */
+	if (!ts->fw_loaded && !nvt_update_firmware(BOOT_UPDATE_FIRMWARE_NAME)) {
+		ts->fw_loaded = true;
+#if IS_ENABLED(CONFIG_XIAOMI_TOUCH_NOTIFIER)
+		/* Reloading the firmware turns the display off */
+		xiaomi_touch_notifier_call_chain(XIAOMI_TOUCH_FW_READY_EVENT, NULL);
+#endif
+	}
 	mutex_unlock(&ts->lock);
 }
 #endif /* BOOT_UPDATE_FIRMWARE */
