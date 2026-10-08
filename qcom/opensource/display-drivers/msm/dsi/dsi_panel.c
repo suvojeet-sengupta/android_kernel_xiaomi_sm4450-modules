@@ -5003,16 +5003,21 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
 
 	mutex_lock(&panel->panel_lock);
 
+	if (panel->bl_config.type == DSI_BACKLIGHT_I2C) {
+		/* Keep the TDDI powered for touch wakeup */
+		if (touch_gesture_enable || touch_priximity_enable)
+			goto error;
+
+		/* Bias has to drop before reset and the supplies */
+		ocp2131_disable();
+	}
+
 	rc = dsi_panel_power_off(panel);
 	if (rc) {
 		DSI_ERR("[%s] panel power_Off failed, rc=%d\n",
 		       panel->name, rc);
 		goto error;
 	}
-
-	if (panel->bl_config.type == DSI_BACKLIGHT_I2C &&
-	    !(touch_gesture_enable || touch_priximity_enable))
-		ocp2131_disable();
 error:
 	mutex_unlock(&panel->panel_lock);
 	xiaomi_panel_notify(XIAOMI_PANEL_EVENT_BLANK, XIAOMI_PANEL_BLANK_POWERDOWN);
