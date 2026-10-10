@@ -187,6 +187,7 @@ struct nvt_ts_data {
 	struct spi_device *client;
 	struct input_dev *input_dev;
 	struct delayed_work nvt_fwu_work;
+	bool fw_loaded;
 	uint16_t addr;
 	int8_t phys[32];
 /* N19 code for HQ-354491 by p-luozhibin1 at 2023.1.22 start */
