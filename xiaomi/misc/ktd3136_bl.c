@@ -31,6 +31,8 @@
 struct i2c_client *g_blclient;
 struct ktd3136_data *reg;
 static u8 g_bl_id, vaL_show;
+static bool hbm_panel_m19 = true;
+static bool hbm_enabled;
 static int *bl_mapping_table, reg_show;
 static struct proc_dir_entry *proc_backlight_dir = NULL;
 static struct proc_dir_entry *backlight_ic_info_entry = NULL;
@@ -217,6 +219,7 @@ void ktd3136_reg_init(bool which_display)
 		return;
 
 	ktd = i2c_get_clientdata(g_blclient);
+	hbm_panel_m19 = which_display;
 
 	mutex_lock(&ktd->i2c_rw_lock);
 
@@ -248,6 +251,10 @@ void ktd3136_reg_init(bool which_display)
 		}
 	}
 	mutex_unlock(&ktd->i2c_rw_lock);
+
+	/* The init tables reset the LED current, restore HBM */
+	if (hbm_enabled)
+		hbm_set_mode(hbm_panel_m19, LCD_HBM_L3_ON);
 }
 EXPORT_SYMBOL(ktd3136_reg_init);
 
@@ -478,6 +485,27 @@ void select_backlight_ic_mode(bool is_panel)
 }
 EXPORT_SYMBOL(select_backlight_ic_mode);
 
+static ssize_t hbm_show(struct device *dev, struct device_attribute *attr,
+			char *buf)
+{
+	return sysfs_emit(buf, "%d\n", hbm_enabled);
+}
+
+static ssize_t hbm_store(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count)
+{
+	bool enable;
+
+	if (kstrtobool(buf, &enable))
+		return -EINVAL;
+
+	hbm_enabled = enable;
+	hbm_set_mode(hbm_panel_m19, enable ? LCD_HBM_L3_ON : LCD_HBM_OFF);
+
+	return count;
+}
+static DEVICE_ATTR_RW(hbm);
+
 static int ktd3136_probe(struct i2c_client *client)
 {
 	struct ktd3136_chip *chip;
@@ -509,12 +537,16 @@ static int ktd3136_probe(struct i2c_client *client)
 
 	ktd_node_init();
 
+	if (device_create_file(&client->dev, &dev_attr_hbm))
+		dev_err(&client->dev, "failed to create hbm node\n");
+
 	return 0;
 }
 static void ktd3136_remove(struct i2c_client *client)
 {
 	struct ktd3136_chip *chip = i2c_get_clientdata(client);
 
+	device_remove_file(&client->dev, &dev_attr_hbm);
 	gpio_set_value(chip->hwen_gpio, 0);
 	gpio_free(chip->hwen_gpio);
 
