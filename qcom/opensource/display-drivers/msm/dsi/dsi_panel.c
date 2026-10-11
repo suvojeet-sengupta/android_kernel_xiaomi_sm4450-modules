@@ -2003,6 +2003,10 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-qsync-on-commands",
 	"qcom,mdss-dsi-qsync-off-commands",
 	"qcom,proximity_pre-off-command",
+	"qcom,mdss-dsi-cabc-off-command",
+	"qcom,mdss-dsi-cabc-ui-on-command",
+	"qcom,mdss-dsi-cabc-still-on-command",
+	"qcom,mdss-dsi-cabc-movie-on-command",
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -2032,6 +2036,10 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-qsync-on-commands-state",
 	"qcom,mdss-dsi-qsync-off-commands-state",
 	"qcom,proximity_pre-off-command-state",
+	"qcom,mdss-dsi-cabc-off-command-state",
+	"qcom,mdss-dsi-cabc-ui-on-command-state",
+	"qcom,mdss-dsi-cabc-still-on-command-state",
+	"qcom,mdss-dsi-cabc-movie-on-command-state",
 };
 
 int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -4929,6 +4937,33 @@ int dsi_panel_post_switch(struct dsi_panel *panel)
 	return rc;
 }
 
+static int dsi_panel_tx_cabc(struct dsi_panel *panel)
+{
+	enum dsi_cmd_set_type type = DSI_CMD_SET_CABC_OFF + panel->cabc_mode;
+
+	if (!panel->cur_mode || !panel->cur_mode->priv_info ||
+	    !panel->cur_mode->priv_info->cmd_sets[type].count)
+		return -EOPNOTSUPP;
+
+	return dsi_panel_tx_cmd_set(panel, type);
+}
+
+int dsi_panel_set_cabc(struct dsi_panel *panel, u32 mode)
+{
+	int rc = 0;
+
+	if (!panel || mode > DSI_CMD_SET_CABC_MOVIE_ON - DSI_CMD_SET_CABC_OFF)
+		return -EINVAL;
+
+	mutex_lock(&panel->panel_lock);
+	panel->cabc_mode = mode;
+	if (panel->panel_initialized)
+		rc = dsi_panel_tx_cabc(panel);
+	mutex_unlock(&panel->panel_lock);
+
+	return rc;
+}
+
 int dsi_panel_enable(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -4965,6 +5000,10 @@ int dsi_panel_enable(struct dsi_panel *panel)
 		}
 	}
 	panel->panel_initialized = true;
+
+	/* The on commands reset CABC, restore the selected mode */
+	if (panel->cabc_mode)
+		dsi_panel_tx_cabc(panel);
 
 error:
 	mutex_unlock(&panel->panel_lock);

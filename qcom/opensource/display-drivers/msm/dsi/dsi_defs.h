@@ -269,6 +269,10 @@ enum dsi_dyn_clk_feature_type {
  * @DSI_CMD_SET_QSYNC_ON                   Enable qsync mode
  * @DSI_CMD_SET_QSYNC_OFF                  Disable qsync mode
  * @DSI_CMD_SET_PROXIMITY_OFF              Panel off with touch proximity on
+ * @DSI_CMD_SET_CABC_OFF                   CABC off
+ * @DSI_CMD_SET_CABC_UI_ON                 CABC UI mode
+ * @DSI_CMD_SET_CABC_STILL_ON              CABC still image mode
+ * @DSI_CMD_SET_CABC_MOVIE_ON              CABC movie mode
  * @DSI_CMD_SET_MAX
  */
 enum dsi_cmd_set_type {
@@ -298,6 +302,10 @@ enum dsi_cmd_set_type {
 	DSI_CMD_SET_QSYNC_ON,
 	DSI_CMD_SET_QSYNC_OFF,
 	DSI_CMD_SET_PROXIMITY_OFF,
+	DSI_CMD_SET_CABC_OFF,
+	DSI_CMD_SET_CABC_UI_ON,
+	DSI_CMD_SET_CABC_STILL_ON,
+	DSI_CMD_SET_CABC_MOVIE_ON,
 	DSI_CMD_SET_MAX
 };
 

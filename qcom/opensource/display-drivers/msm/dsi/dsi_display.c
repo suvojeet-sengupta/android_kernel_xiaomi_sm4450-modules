@@ -124,6 +124,35 @@ static struct notifier_block xiaomi_touch_nb = {
 	.notifier_call = xiaomi_touch_notifier_callback,
 };
 
+static ssize_t cabc_show(struct device *dev, struct device_attribute *attr,
+			 char *buf)
+{
+	struct dsi_display *display = xiaomi_primary_display;
+
+	if (!display || !display->panel)
+		return -ENODEV;
+
+	return sysfs_emit(buf, "%u\n", display->panel->cabc_mode);
+}
+
+static ssize_t cabc_store(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	struct dsi_display *display = xiaomi_primary_display;
+	u32 mode;
+	int rc;
+
+	if (!display || !display->panel)
+		return -ENODEV;
+
+	if (kstrtou32(buf, 10, &mode))
+		return -EINVAL;
+
+	rc = dsi_panel_set_cabc(display->panel, mode);
+	return rc ? rc : count;
+}
+static DEVICE_ATTR_RW(cabc);
+
 static void xiaomi_display_probe(struct dsi_display *display)
 {
 	const char *name;
@@ -143,6 +172,9 @@ static void xiaomi_display_probe(struct dsi_display *display)
 		is_panel = 0x0c;
 
 	xiaomi_primary_display = display;
+
+	if (device_create_file(&display->pdev->dev, &dev_attr_cabc))
+		DSI_ERR("failed to create cabc node\n");
 
 	if (!xiaomi_touch_nb_registered &&
 	    !xiaomi_touch_notifier_register_client(&xiaomi_touch_nb))
