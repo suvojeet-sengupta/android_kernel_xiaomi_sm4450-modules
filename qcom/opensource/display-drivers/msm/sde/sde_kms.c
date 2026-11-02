@@ -4658,11 +4658,30 @@ static int sde_kms_pd_enable(struct generic_pm_domain *genpd)
 	int rc = -EINVAL;
 
 	SDE_DEBUG("\n");
+	if (sde_kms->dev->dev->power.disable_depth > 0) {
+		pr_debug("disable_depth=%d, defer pd_enable\n",
+			sde_kms->dev->dev->power.disable_depth);
+		SDE_EVT32(rc, genpd->device_count,
+			atomic_read(&sde_kms->dev->dev->power.usage_count),
+			atomic_read(&sde_kms->pd_enable_count),
+			pm_runtime_suspended(sde_kms->dev->dev));
+		return 0;
+	}
 
-	rc = pm_runtime_resume_and_get(sde_kms->dev->dev);
+	rc = pm_runtime_get_sync(sde_kms->dev->dev);
+	if (rc < 0) {
+		pm_runtime_put_noidle(sde_kms->dev->dev);
+		dev_err(sde_kms->dev->dev, "PM runtime resume failed: %d\n", rc);
+		SDE_EVT32(rc, genpd->device_count,
+			atomic_read(&sde_kms->dev->dev->power.usage_count),
+			pm_runtime_suspended(sde_kms->dev->dev));
+		return rc;
+	}
 	rc = (rc > 0) ? 0 : rc;
 
-	SDE_EVT32(rc, genpd->device_count);
+	atomic_inc(&sde_kms->pd_enable_count);
+	SDE_EVT32(rc, genpd->device_count, atomic_read(&sde_kms->dev->dev->power.usage_count),
+		pm_runtime_suspended(sde_kms->dev->dev), atomic_read(&sde_kms->pd_enable_count));
 
 	return rc;
 }
@@ -4673,9 +4692,23 @@ static int sde_kms_pd_disable(struct generic_pm_domain *genpd)
 
 	SDE_DEBUG("\n");
 
+	if(atomic_dec_return(&sde_kms->pd_enable_count) < 0) {
+		pr_debug("pd_disable called without successful pd_enable,\
+			skipping pm_runtime_put_sync, pd_enable_count=%d\n",
+			atomic_read(&sde_kms->pd_enable_count));
+		SDE_EVT32(genpd->device_count, atomic_read(&sde_kms->dev->dev->power.usage_count),
+			pm_runtime_suspended(sde_kms->dev->dev));
+		atomic_inc(&sde_kms->pd_enable_count);
+		pr_debug("device_count=%d, usage_count=%d, pd_enable_count=%d, runtime-suspend=%d\n",
+			genpd->device_count, atomic_read(&sde_kms->dev->dev->power.usage_count),
+			atomic_read(&sde_kms->pd_enable_count), pm_runtime_suspended(sde_kms->dev->dev));
+		return 0;
+	}
+
 	pm_runtime_put_sync(sde_kms->dev->dev);
 
-	SDE_EVT32(genpd->device_count);
+	SDE_EVT32(genpd->device_count, atomic_read(&sde_kms->dev->dev->power.usage_count),
+		pm_runtime_suspended(sde_kms->dev->dev));
 
 	return 0;
 }
@@ -4947,6 +4980,7 @@ static int _sde_kms_hw_init_power_helper(struct drm_device *dev,
 		}
 
 		sde_kms->genpd_init = true;
+		atomic_set(&sde_kms->pd_enable_count, 0);
 		SDE_DEBUG("added genpd provider %s\n", sde_kms->genpd.name);
 	}
 
