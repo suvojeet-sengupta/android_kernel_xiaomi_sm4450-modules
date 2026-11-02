@@ -41,7 +41,7 @@
 * Private constant and macro definitions using #define
 *****************************************************************************/
 /* N19 code for HQ-351921 by liuyupei at 2024/1/5 start */
-#define KEY_GESTURE_DOUBLECLICK                 KEY_POWER
+#define KEY_GESTURE_DOUBLECLICK                 KEY_WAKEUP
 /* N19 code for HQ-351921 by liuyupei at 2024/1/5 end */
 #define KEY_GESTURE_UP                          KEY_UP
 #define KEY_GESTURE_DOWN                        KEY_DOWN
