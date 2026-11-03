@@ -271,7 +271,7 @@ int ktd3136_bl_set_brightness(u32 bl_lvl)
 
 	brightness = bl_mapping_table[bl_lvl];
 	cur_state =  brightness > 0 ? 1 : 0;
-	LOG_DBG("%s: brightness=%d, bl_lvl=%u\n", __func__, brightness, bl_lvl);
+	pr_debug("[drm][ktd]%s: brightness=%d, bl_lvl=%u\n", __func__, brightness, bl_lvl);
 
 	if (pre_state != cur_state) {
 		if(g_bl_id == LM3697_CHIP) {
