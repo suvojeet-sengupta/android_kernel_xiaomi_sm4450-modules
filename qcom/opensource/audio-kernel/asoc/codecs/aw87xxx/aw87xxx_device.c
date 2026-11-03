@@ -292,7 +292,7 @@ static void aw87xxx_dev_reg_mute_bits_set(struct aw_device *aw_dev,
 		reg_addr = profile_data->data[i];
 		reg_val = profile_data->data[i + 1];
 
-		AW_DEV_LOGI(aw_dev->dev, "reg=0x%02x, val = 0x%02x", reg_addr, reg_val);
+		AW_DEV_LOGD(aw_dev->dev, "reg=0x%02x, val = 0x%02x", reg_addr, reg_val);
 
 		if (reg_addr == AW87XXX_DELAY_REG_ADDR) {
 			AW_DEV_LOGI(aw_dev->dev, "delay %d ms", reg_val);
@@ -327,7 +327,7 @@ static int aw_send_cache(struct aw_device *aw_dev, struct aw_reg_cache *cache)
 
     data1[0] = cache->start_addr;
     memcpy(&data1[1], cache->data, cache->count);
-    AW_DEV_LOGI(aw_dev->dev, "reg=0x%02x, count = %d", cache->start_addr, cache->count);
+    AW_DEV_LOGD(aw_dev->dev, "reg=0x%02x, count = %d", cache->start_addr, cache->count);
     ret = i2c_master_send(aw_dev->i2c, data1, cache->count + 1);
     kfree(data1);
     memset(cache->data, 0, sizeof(cache->data));
@@ -360,7 +360,7 @@ static int aw87xxx_dev_reg_update(struct aw_device *aw_dev,
 	for (i = 0; i < profile_data->len; i = i + 2) {
 		reg_addr = profile_data->data[i];
 		reg_val = profile_data->data[i + 1];
-		AW_DEV_LOGI(aw_dev->dev, "reg=0x%02x, val = 0x%02x", reg_addr, reg_val);
+		AW_DEV_LOGD(aw_dev->dev, "reg=0x%02x, val = 0x%02x", reg_addr, reg_val);
 
 		 /*delay ms*/
 		if (reg_addr == AW87XXX_DELAY_REG_ADDR) {
@@ -876,7 +876,7 @@ static int aw_dev_pid_9b_reg_update(struct aw_device *aw_dev,
 		return ret;
 
 	for (i = 1; i < AW_PID_9B_BIN_REG_CFG_COUNT; i++) {
-		AW_DEV_LOGI(aw_dev->dev, "reg=0x%02x, val = 0x%02x",
+		AW_DEV_LOGD(aw_dev->dev, "reg=0x%02x, val = 0x%02x",
 			i, profile_data->data[i]);
 		/*delay ms*/
 		if (profile_data->data[i] == AW87XXX_DELAY_REG_ADDR) {

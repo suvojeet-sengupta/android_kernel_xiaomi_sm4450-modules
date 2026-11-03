@@ -1869,6 +1869,10 @@ void fsm_speaker_onn(void)
 	fsm_dev_t *fsm_dev = NULL;
 	int ret;
 
+	/* Phones with another speaker amp have no FS15xx to switch */
+	if (cfg->dev_count <= 0)
+		return;
+
 	pr_info("scene:%04X, select:%X",
 			cfg->next_scene, cfg->amp_select);
 	fsm_mutex_lock();
@@ -1898,6 +1902,10 @@ void fsm_speaker_off(void)
 	fsm_config_t *cfg = fsm_get_config();
 	fsm_dev_t *fsm_dev = NULL;
 	int ret;
+
+	/* Phones with another speaker amp have no FS15xx to switch */
+	if (cfg->dev_count <= 0)
+		return;
 
 	pr_info("scene:%04X, select:%X",
 			cfg->next_scene, cfg->amp_select);
