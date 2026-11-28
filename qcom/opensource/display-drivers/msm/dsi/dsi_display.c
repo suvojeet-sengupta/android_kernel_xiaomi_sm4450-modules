@@ -8842,6 +8842,22 @@ int dsi_display_enable(struct dsi_display *display)
 
 		dsi_display_config_ctrl_for_cont_splash(display);
 
+		/*
+		 * The panel still holds the PPS the bootloader sent, which
+		 * can differ from the DSC config the encoder now runs with
+		 * (the 36_02 panels use their own rate control lut), and the
+		 * panel then decodes garbage until the next full enable.
+		 * Send the kernel's PPS while the splash clocks are still on.
+		 */
+		mode = display->panel->cur_mode;
+		if (display->is_cont_splash_enabled &&
+		    mode->priv_info && mode->priv_info->dsc_enabled) {
+			rc = dsi_panel_update_pps(display->panel);
+			if (rc)
+				DSI_ERR("[%s] splash pps update failed, rc=%d\n",
+					display->name, rc);
+		}
+
 		rc = dsi_display_splash_res_cleanup(display);
 		if (rc) {
 			DSI_ERR("Continuous splash res cleanup failed, rc=%d\n",
