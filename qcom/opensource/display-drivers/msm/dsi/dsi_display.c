@@ -8852,7 +8852,18 @@ int dsi_display_enable(struct dsi_display *display)
 		mode = display->panel->cur_mode;
 		if (display->is_cont_splash_enabled &&
 		    mode->priv_info && mode->priv_info->dsc_enabled) {
+			struct dsi_panel_cmd_set *pps =
+				&mode->priv_info->cmd_sets[DSI_CMD_SET_PPS];
+			enum dsi_cmd_set_state orig_state = pps->state;
+
+			/*
+			 * Video-mode cont splash is already streaming HS video,
+			 * so send PPS in HS mode during blanking instead of LP.
+			 */
+			if (display->config.panel_mode == DSI_OP_VIDEO_MODE)
+				pps->state = DSI_CMD_SET_STATE_HS;
 			rc = dsi_panel_update_pps(display->panel);
+			pps->state = orig_state;
 			if (rc)
 				DSI_ERR("[%s] splash pps update failed, rc=%d\n",
 					display->name, rc);
